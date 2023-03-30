@@ -63,15 +63,19 @@ def main():
     # set out folder
     out_folder = args.output
 
+    # split user to train or test
+    user_train_test_state_dict = {}
+
     # go through all data folder
     data_names = sorted(os.listdir(in_data_folder))
     for data_name in data_names:
 
-        # get data path
+        # get src data path
         src_data_path = osp.join(in_data_folder, data_name)
 
         # get label path
-        label_path = osp.join(in_label_folder, "User_" + data_name.split('_', 1)[0] + ".txt")
+        user_name = data_name.split('_', 1)[0]
+        label_path = osp.join(in_label_folder, "User_" + user_name + ".txt")
         if not osp.isfile(label_path):
             continue
 
@@ -79,10 +83,17 @@ def main():
         label = get_label(label_path)
 
         # split train or test
-        if random.uniform(0,1) <= args.train_test_split_ratio:
-            dst_data_path = osp.join(out_folder, CLASSES['identity']['class_info'][label]['name'], 'train', data_name)
+        if user_name in user_train_test_state_dict:
+            train_test_state = user_train_test_state_dict[user_name]
         else:
-            dst_data_path = osp.join(out_folder, CLASSES['identity']['class_info'][label]['name'], 'test', data_name)
+            if random.uniform(0,1) <= args.train_test_split_ratio:
+                train_test_state = "train"
+            else:
+                train_test_state = "test"
+            user_train_test_state_dict[user_name] = train_test_state
+
+        # set dst data path
+        dst_data_path = osp.join(out_folder, CLASSES['identity']['class_info'][label]['name'], train_test_state, data_name)
         os.makedirs(osp.dirname(dst_data_path), exist_ok=True)
 
         # soft link
@@ -97,7 +108,10 @@ def main():
           "\n# test neg data: ", subprocess.check_output("find {} -type l| wc -l".format(osp.join(out_folder, "Negative", "test")), shell=True).decode('utf-8').strip(),
           "\n# test pos data: ", subprocess.check_output("find {} -type l| wc -l".format(osp.join(out_folder, "Positive", "test")), shell=True).decode('utf-8').strip(),
           "\n# test total data", subprocess.check_output("find {} -type l|grep test| wc -l".format(out_folder), shell=True).decode('utf-8').strip(),
-          "\n# filtered total data", subprocess.check_output("find {} -type l| wc -l".format(out_folder), shell=True).decode('utf-8').strip())
+          "\n# filtered total data", subprocess.check_output("find {} -type l| wc -l".format(out_folder), shell=True).decode('utf-8').strip(),
+          "\n# train user: ", len([k for k, v in user_train_test_state_dict.items() if v == 'train']),
+          "\n# test user: ", len([k for k, v in user_train_test_state_dict.items() if v == 'test']),
+          "\n# filtered total user: ", len(user_train_test_state_dict))
 
 if __name__ == '__main__':
     main()
