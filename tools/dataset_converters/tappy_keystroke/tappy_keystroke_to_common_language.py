@@ -8,14 +8,15 @@
 #           python tools/dataset_converters/tappy_keystroke/tappy_keystroke_to_common_language.py \
 #           -i /home1/zjin8285/03_gits/handling_imbalanced_time_series_data/data \
 #           -o /home1/zjin8285/00_Data/tappy_keystroke \
-#           --train_test_split_ratio 0.7
-
+#           --train_test_split_ratio 0.8 \
+#           --min_lines_in_data 100
 
 import argparse
 import os
 import os.path as osp
 import random
 import subprocess
+from tqdm import tqdm
 
 CLASSES = {
     "identity": {"class_info": [dict(id=0, name='Negative'),
@@ -35,6 +36,11 @@ def parse_args():
         default=0.7,
         type=float,
         help='percentage of trainset verses whole dataset')
+    parser.add_argument(
+        '--min_lines_in_data',
+        default=100,
+        type=int,
+        help='minumum lines in one data file')
     return parser.parse_args()
 
 def get_label(label_path):
@@ -68,10 +74,14 @@ def main():
 
     # go through all data folder
     data_names = sorted(os.listdir(in_data_folder))
-    for data_name in data_names:
+    for data_name in tqdm(data_names):
 
         # get src data path
         src_data_path = osp.join(in_data_folder, data_name)
+
+        # filter number of lines
+        if sum(1 for line in open(src_data_path)) < args.min_lines_in_data:
+            continue
 
         # get label path
         user_name = data_name.split('_', 1)[0]
