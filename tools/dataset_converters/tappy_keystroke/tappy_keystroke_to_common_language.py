@@ -6,8 +6,8 @@
 # 1. Basic Usage
 #       PYTHONPATH="$(dirname -- $0)/..":$PYTHONPATH \
 #           python tools/dataset_converters/tappy_keystroke/tappy_keystroke_to_common_language.py \
-#           -i /home1/zjin8285/03_gits/handling_imbalanced_time_series_data/data \
-#           -o /home1/zjin8285/00_Data/tappy_keystroke \
+#           -i /home1/zjin8285/00_Data/tappy_keystroke/raw \
+#           -o /home1/zjin8285/00_Data/tappy_keystroke/processed \
 #           --train_test_split_ratio 0.8 \
 #           --min_lines_in_data 20
 
@@ -83,7 +83,7 @@ def main():
         src_data_path = osp.join(in_data_folder, data_name)
         if not osp.getsize(src_data_path):
             continue
-        src_data_df = pd.read_csv(src_data_path, header=None, sep="\s*\t\s*", engine='python')
+        src_data_df = pd.read_csv(src_data_path, on_bad_lines='skip', header=None, sep="\s*\t\s*", engine='python')
 
         # get label path
         user_name = data_name.split('_', 1)[0]
