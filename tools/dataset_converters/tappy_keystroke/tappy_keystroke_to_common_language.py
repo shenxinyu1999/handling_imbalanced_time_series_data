@@ -9,14 +9,17 @@
 #           -i /home1/zjin8285/03_gits/handling_imbalanced_time_series_data/data \
 #           -o /home1/zjin8285/00_Data/tappy_keystroke \
 #           --train_test_split_ratio 0.8 \
-#           --min_lines_in_data 100
+#           --min_lines_in_data 20
 
 import argparse
 import os
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
 import os.path as osp
 import random
 import subprocess
 from tqdm import tqdm
+import pandas as pd
+import numpy as np
 
 CLASSES = {
     "identity": {"class_info": [dict(id=0, name='Negative'),
@@ -78,10 +81,9 @@ def main():
 
         # get src data path
         src_data_path = osp.join(in_data_folder, data_name)
-
-        # filter number of lines
-        if sum(1 for line in open(src_data_path)) < args.min_lines_in_data:
+        if not osp.getsize(src_data_path):
             continue
+        src_data_df = pd.read_csv(src_data_path, header=None, sep="\s*\t\s*", engine='python')
 
         # get label path
         user_name = data_name.split('_', 1)[0]
@@ -102,23 +104,36 @@ def main():
                 train_test_state = "test"
             user_train_test_state_dict[user_name] = train_test_state
 
-        # set dst data path
-        dst_data_path = osp.join(out_folder, CLASSES['identity']['class_info'][label]['name'], train_test_state, data_name)
-        os.makedirs(osp.dirname(dst_data_path), exist_ok=True)
+        # group sort by date
+        src_data_df = [y for x, y in src_data_df.groupby(1)]
+        src_data_df = [sub_df.sort_values(by=2) for sub_df in src_data_df]
 
-        # soft link
-        os.symlink(src_data_path, dst_data_path)
+        # delete duplicate rows
+        src_data_df = [sub_df.drop_duplicates(keep='last') for sub_df in src_data_df]
+        for src_data_subdf in src_data_df:
+
+            # filter number of lines
+            if src_data_subdf.shape[0] < args.min_lines_in_data:
+                continue
+
+            # set dst data path
+            dst_data_path = osp.join(out_folder, CLASSES['identity']['class_info'][label]['name'], train_test_state,
+                                     user_name + "_" + str(src_data_subdf.iat[1,1]) + ".txt")
+            os.makedirs(osp.dirname(dst_data_path), exist_ok=True)
+
+            # save sub dataframe into file
+            src_data_subdf.to_csv(dst_data_path, sep='\t', header=False, index=False)
 
     # statistic
     print("# original data: ", len(data_names),
           "\n# original user: ", len(os.listdir(in_label_folder)),
-          "\n# train neg data: ", subprocess.check_output("find {} -type l| wc -l".format(osp.join(out_folder, "Negative", "train")), shell=True).decode('utf-8').strip(),
-          "\n# train pos data: ", subprocess.check_output("find {} -type l| wc -l".format(osp.join(out_folder, "Positive", "train")), shell=True).decode('utf-8').strip(),
-          "\n# train total data: ", subprocess.check_output("find {} -type l|grep train | wc -l".format(out_folder), shell=True).decode('utf-8').strip(),
-          "\n# test neg data: ", subprocess.check_output("find {} -type l| wc -l".format(osp.join(out_folder, "Negative", "test")), shell=True).decode('utf-8').strip(),
-          "\n# test pos data: ", subprocess.check_output("find {} -type l| wc -l".format(osp.join(out_folder, "Positive", "test")), shell=True).decode('utf-8').strip(),
-          "\n# test total data", subprocess.check_output("find {} -type l|grep test| wc -l".format(out_folder), shell=True).decode('utf-8').strip(),
-          "\n# filtered total data", subprocess.check_output("find {} -type l| wc -l".format(out_folder), shell=True).decode('utf-8').strip(),
+          "\n# train neg data: ", subprocess.check_output("find {} -type f| wc -l".format(osp.join(out_folder, "Negative", "train")), shell=True).decode('utf-8').strip(),
+          "\n# train pos data: ", subprocess.check_output("find {} -type f| wc -l".format(osp.join(out_folder, "Positive", "train")), shell=True).decode('utf-8').strip(),
+          "\n# train total data: ", subprocess.check_output("find {} -type f|grep train | wc -l".format(out_folder), shell=True).decode('utf-8').strip(),
+          "\n# test neg data: ", subprocess.check_output("find {} -type f| wc -l".format(osp.join(out_folder, "Negative", "test")), shell=True).decode('utf-8').strip(),
+          "\n# test pos data: ", subprocess.check_output("find {} -type f| wc -l".format(osp.join(out_folder, "Positive", "test")), shell=True).decode('utf-8').strip(),
+          "\n# test total data", subprocess.check_output("find {} -type f|grep test| wc -l".format(out_folder), shell=True).decode('utf-8').strip(),
+          "\n# filtered total data", subprocess.check_output("find {} -type f| wc -l".format(out_folder), shell=True).decode('utf-8').strip(),
           "\n# train user: ", len([k for k, v in user_train_test_state_dict.items() if v == 'train']),
           "\n# test user: ", len([k for k, v in user_train_test_state_dict.items() if v == 'test']),
           "\n# filtered total user: ", len(user_train_test_state_dict))
