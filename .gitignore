@@ -157,3 +157,6 @@ cython_debug/
 *.pth
 *.pkl
 
+# slurm related
+*.out
+
