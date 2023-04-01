@@ -9,11 +9,10 @@
 #           -i /home1/zjin8285/00_Data/tappy_keystroke/raw \
 #           -o /home1/zjin8285/00_Data/tappy_keystroke/processed \
 #           --train_test_split_ratio 0.8 \
-#           --min_lines_in_data 20
+#           --min_lines_in_data 100
 
 import argparse
 import os
-os.environ['OPENBLAS_NUM_THREADS'] = '1'
 import os.path as osp
 import random
 import subprocess
@@ -84,6 +83,12 @@ def main():
         if not osp.getsize(src_data_path):
             continue
         src_data_df = pd.read_csv(src_data_path, on_bad_lines='skip', header=None, sep="\s*\t\s*", engine='python')
+        src_data_df.columns = ['UserID','Date','Timestamp','Hand','HoldTime','Direction','LatencyTime','FlightTime']
+
+        # filter non float value in holdtime/latency/flytime
+        src_data_df = src_data_df[pd.to_numeric(src_data_df['HoldTime'], errors='coerce').notnull()]
+        src_data_df = src_data_df[pd.to_numeric(src_data_df['LatencyTime'], errors='coerce').notnull()]
+        src_data_df = src_data_df[pd.to_numeric(src_data_df['FlightTime'], errors='coerce').notnull()]
 
         # get label path
         user_name = data_name.split('_', 1)[0]
@@ -105,8 +110,8 @@ def main():
             user_train_test_state_dict[user_name] = train_test_state
 
         # group sort by date
-        src_data_df = [y for x, y in src_data_df.groupby(1)]
-        src_data_df = [sub_df.sort_values(by=2) for sub_df in src_data_df]
+        src_data_df = [y for x, y in src_data_df.groupby('Date')]
+        src_data_df = [sub_df.sort_values(by='Timestamp') for sub_df in src_data_df]
 
         # delete duplicate rows
         src_data_df = [sub_df.drop_duplicates(keep='last') for sub_df in src_data_df]
