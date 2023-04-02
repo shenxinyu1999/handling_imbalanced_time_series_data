@@ -402,6 +402,22 @@ def classification_error(
     )
 
 
+def classification_accuracy(
+    probabilities, targets, length=None, allowed_len_diff=3, reduction=None
+):
+
+    if len(probabilities.shape) == 3 and len(targets.shape) == 2:
+        probabilities, targets = truncate(
+            probabilities, targets, allowed_len_diff
+        )
+
+    predictions = torch.argmax(probabilities, dim=-1)
+    targets = targets.long()
+
+    mask_hit = (predictions == targets).squeeze().long()
+
+    return mask_hit
+
 def nll_loss(
     log_probabilities,
     targets,

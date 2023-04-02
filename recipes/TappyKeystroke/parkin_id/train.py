@@ -157,7 +157,7 @@ class LID(sb.Brain):
         else:
             stats = {
                 "loss": stage_loss,
-                "error": self.error_metrics.summarize("average"),
+                "acc": self.error_metrics.summarize("average"),
             }
 
         # At the end of validation...
