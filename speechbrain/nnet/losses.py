@@ -1080,6 +1080,45 @@ class LogSoftmaxWrapper(nn.Module):
         return loss
 
 
+class SigmoidFocalLossWrapper(nn.Module):
+
+    def __init__(self, loss_fn=None, gamma=2., alpha=0.25, reduction="sum"):
+        super(SigmoidFocalLossWrapper, self).__init__()
+        self.loss_fn = loss_fn
+        self.gamma = gamma
+        self.alpha = alpha
+        self.reduction = reduction
+
+    def forward(self, outputs, targets, length=None):
+
+        outputs = outputs.squeeze(1)
+        targets = targets.squeeze(1)
+        targets = F.one_hot(targets.long(), outputs.shape[1]).float()
+        if self.loss_fn is not None:
+            try:
+                predictions = self.loss_fn(outputs, targets)
+            except TypeError:
+                predictions = self.loss_fn(outputs)
+        else:
+            predictions = outputs
+
+        p = torch.sigmoid(predictions)
+        ce_loss = F.binary_cross_entropy_with_logits(predictions, targets, reduction="none")
+        p_t = p * targets + (1 - p) * (1 - targets)
+        loss = ce_loss * ((1 - p_t) ** self.gamma)
+
+        if self.alpha >= 0:
+            alpha_t = self.alpha * targets + (1 - self.alpha) * (1 - targets)
+            loss = alpha_t * loss
+
+        if self.reduction == "mean":
+            return loss.mean()
+        elif self.reduction == "sum":
+            return loss.sum()
+        else:
+            return loss
+
+
 def ctc_loss_kd(log_probs, targets, input_lens, blank_index, device):
     """Knowledge distillation for CTC loss.
 
