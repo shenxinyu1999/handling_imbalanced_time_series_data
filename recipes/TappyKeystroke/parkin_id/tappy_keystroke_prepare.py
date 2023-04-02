@@ -131,7 +131,7 @@ def create_sets(data_folder, extension):
     # Get the list of languages from the dataset folder
     parkinsons = [
         name
-        for name in os.listdir(data_folder)
+        for name in sorted(os.listdir(data_folder))
         if os.path.isdir(os.path.join(data_folder, name))
         and datasets.issubset(os.listdir(os.path.join(data_folder, name)))
     ]
