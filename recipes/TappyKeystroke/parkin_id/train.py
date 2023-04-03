@@ -157,8 +157,8 @@ class LID(sb.Brain):
         else:
             stats = {
                 "loss": stage_loss,
-                "acc": self.error_metrics.summarize("average"),
             }
+            stats = {**stats, **self.error_metrics.summarize()}
 
         # At the end of validation...
         if stage == sb.Stage.VALID:
@@ -217,11 +217,7 @@ def dataio_prep(hparams):
         sig = pd.read_csv(txt, header=None, sep='\t')
         # Load HoldTime Only
         sig = sig.iloc[:, -4]
-        try:
-            sig = torch.from_numpy(np.array(sig)).float()
-        except:
-            print("sig", sig, "np.array(sig)", np.array(sig))
-            assert False
+        sig = torch.from_numpy(np.array(sig)).float()
         return sig
 
     # Define label pipeline:
@@ -304,7 +300,8 @@ if __name__ == "__main__":
         run_opts=run_opts,
         checkpointer=hparams["checkpointer"],
     )
-    print("lid_brain", lid_brain)
+    msg = f"lid_brain {lid_brain}"
+    logger.info(msg)
 
     # The `fit()` method iterates the training loop, calling the methods
     # necessary to update the parameters of the model. Since all objects

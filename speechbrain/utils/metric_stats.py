@@ -159,6 +159,77 @@ class MetricStats:
             print(message)
 
 
+class MultiMetricStats(MetricStats):
+    def __init__(self, metrics, metrics_names, n_jobs=1, batch_eval=True):
+        if not isinstance(metrics, list):
+            metrics = [metrics]
+        self.metrics = metrics
+        if not isinstance(metrics_names, list):
+            metrics_names = [metrics_names]
+        self.metrics_names = metrics_names
+        assert len(self.metrics) == len(self.metrics_names)
+
+        self.n_jobs = n_jobs
+        self.batch_eval = batch_eval
+        self.clear()
+
+    def clear(self):
+        """Creates empty container for storage, removing existing stats."""
+        self.score_numerators = []
+        self.score_denominators = []
+        for _ in range(len(self.metrics)):
+            self.score_numerators.append([])
+            self.score_denominators.append([])
+        self.ids = []
+        self.summary = {}
+
+    def append(self, ids, *args, **kwargs):
+        """Store a particular set of metric scores.
+
+        Arguments
+        ---------
+        ids : list
+            List of ids corresponding to utterances.
+        *args, **kwargs
+            Arguments to pass to the metric function.
+        """
+        self.ids.extend(ids)
+
+        # Batch evaluation
+        if self.batch_eval:
+            for i in range(len(self.metrics)):
+                rtn = self.metrics[i](*args, **kwargs)
+                if isinstance(rtn, tuple):
+                    self.score_numerators[i].extend(rtn[0].detach())
+                    self.score_denominators[i].extend(rtn[1].detach())
+                else:
+                    self.score_numerators[i].extend(rtn.detach())
+                    self.score_denominators[i].extend(torch.ones_like(rtn.detach()))
+
+        else:
+            raise NotImplementedError
+
+    def summarize(self, field=None):
+
+        for i in range(len(self.metrics)):
+            self.summary[self.metrics_names[i]] = 100. * torch.tensor(self.score_numerators[i]).sum() / \
+                                                  torch.tensor(self.score_denominators[i]).sum()
+
+        return self.summary
+
+    def write_stats(self, filestream, verbose=False):
+        if not self.summary:
+            self.summarize()
+
+        message = ""
+        for k, v in self.summary.items():
+            message += f"{k}: {v}, "
+
+        filestream.write(message)
+        if verbose:
+            print(message)
+
+
 def multiprocess_evaluation(metric, predict, target, lengths=None, n_jobs=8):
     """Runs metric evaluation if parallel over multiple jobs."""
     if lengths is not None:

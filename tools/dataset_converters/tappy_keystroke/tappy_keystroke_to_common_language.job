@@ -4,7 +4,7 @@
 #SBATCH --partition=main
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=10
+#SBATCH --cpus-per-task=2
 #SBATCH --mem=10GB
 #SBATCH --time=01:00:00
 #SBATCH -o ./slurm-%j.out
@@ -34,6 +34,6 @@ PYTHONPATH="$(dirname -- $0)/..":$PYTHONPATH \
     python tools/dataset_converters/tappy_keystroke/tappy_keystroke_to_common_language.py \
     -i ${src_data_dir} \
     -o ${dst_data_dir} \
-    --train_test_split_ratio 0.8 \
-    --min_lines_in_data 100
+    --train_test_split_ratio 0.75 \
+    --min_lines_in_data 50
 

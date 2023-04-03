@@ -411,12 +411,51 @@ def classification_accuracy(
             probabilities, targets, allowed_len_diff
         )
 
-    predictions = torch.argmax(probabilities, dim=-1)
+    predictions = torch.argmax(probabilities, dim=-1, keepdim=False)
     targets = targets.long()
 
-    mask_hit = (predictions == targets).squeeze().long()
+    mask_hit = (predictions == targets).squeeze(1).long()
 
     return mask_hit
+
+
+def classification_binary_recall(
+    probabilities, targets, length=None, allowed_len_diff=3, reduction=None
+):
+
+    if len(probabilities.shape) == 3 and len(targets.shape) == 2:
+        probabilities, targets = truncate(
+            probabilities, targets, allowed_len_diff
+        )
+
+    predictions = torch.argmax(probabilities, dim=-1, keepdim=False)
+    targets = targets.long()
+
+    mask_gt1pred1 = (predictions == torch.ones_like(predictions) &
+                     targets == torch.ones_like(targets)).squeeze(1).long()
+    mask_gt1 = (targets == torch.ones_like(targets)).squeeze(1).long()
+
+    return mask_gt1pred1, mask_gt1
+
+
+def classification_binary_precision(
+    probabilities, targets, length=None, allowed_len_diff=3, reduction=None
+):
+
+    if len(probabilities.shape) == 3 and len(targets.shape) == 2:
+        probabilities, targets = truncate(
+            probabilities, targets, allowed_len_diff
+        )
+
+    predictions = torch.argmax(probabilities, dim=-1, keepdim=False)
+    targets = targets.long()
+
+    mask_gt1pred1 = (predictions == torch.ones_like(predictions) &
+                     targets == torch.ones_like(targets)).squeeze(1).long()
+    mask_pred1 = (predictions == torch.ones_like(predictions)).squeeze(1).long()
+
+    return mask_gt1pred1, mask_pred1
+
 
 def nll_loss(
     log_probabilities,
