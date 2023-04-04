@@ -411,6 +411,7 @@ class ECAPA_TDNN(torch.nn.Module):
         se_channels=128,
         global_context=True,
         groups=[1, 1, 1, 1, 1],
+        dropout_rate=0.0,
     ):
 
         super().__init__()
@@ -464,6 +465,9 @@ class ECAPA_TDNN(torch.nn.Module):
         )
         self.asp_bn = BatchNorm1d(input_size=channels[-1] * 2)
 
+        # Dropout
+        self.dropout = torch.nn.Dropout(dropout_rate)
+
         # Final linear transformation
         self.fc = Conv1d(
             in_channels=channels[-1] * 2,
@@ -497,6 +501,9 @@ class ECAPA_TDNN(torch.nn.Module):
         # Attentive Statistical Pooling
         x = self.asp(x, lengths=lengths)
         x = self.asp_bn(x)
+
+        # Dropout
+        x = self.dropout(x)
 
         # Final linear transformation
         x = self.fc(x)

@@ -216,7 +216,11 @@ def dataio_prep(hparams):
         This is done on the CPU in the `collate_fn`."""
         sig = pd.read_csv(txt, header=None, sep='\t')
         # Load HoldTime Only
-        sig = sig.iloc[:, -4]
+        # sig = sig.iloc[:, -4]
+        # Load Latency Only
+        # sig = sig.iloc[:, -2]
+        # Load FlightTime Only
+        sig = sig.iloc[:, -1]
         sig = torch.from_numpy(np.array(sig)).float()
         return sig
 
@@ -300,7 +304,7 @@ if __name__ == "__main__":
         run_opts=run_opts,
         checkpointer=hparams["checkpointer"],
     )
-    msg = f"lid_brain {lid_brain}"
+    msg = "modules: " + str(hparams["modules"])
     logger.info(msg)
 
     # The `fit()` method iterates the training loop, calling the methods
