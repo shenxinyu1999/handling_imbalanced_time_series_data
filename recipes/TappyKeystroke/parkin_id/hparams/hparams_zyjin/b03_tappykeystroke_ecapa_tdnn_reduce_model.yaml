@@ -35,12 +35,16 @@ train_logger: !new:speechbrain.utils.train_logger.FileTrainLogger
 error_stats: !name:speechbrain.utils.metric_stats.MultiMetricStats
     metrics: 
         - !name:speechbrain.nnet.losses.classification_accuracy
-        - !name:speechbrain.nnet.losses.classification_binary_recall
-        - !name:speechbrain.nnet.losses.classification_binary_precision
+        - !name:speechbrain.nnet.losses.classification_binary_recall_pos
+        - !name:speechbrain.nnet.losses.classification_binary_recall_neg
+        - !name:speechbrain.nnet.losses.classification_binary_precision_pos
+        - !name:speechbrain.nnet.losses.classification_binary_precision_neg
     metrics_names:
         - acc
-        - recall
-        - precision
+        - recall_pos
+        - recall_neg
+        - precision_pos
+        - precision_neg
 
 # Feature parameters btw: 40 - 80
 n_mels: 80

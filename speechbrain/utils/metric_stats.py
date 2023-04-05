@@ -212,8 +212,14 @@ class MultiMetricStats(MetricStats):
     def summarize(self, field=None):
 
         for i in range(len(self.metrics)):
-            self.summary[self.metrics_names[i]] = 100. * torch.tensor(self.score_numerators[i]).sum() / \
-                                                  torch.tensor(self.score_denominators[i]).sum()
+
+            score_numerator = torch.tensor(self.score_numerators[i]).sum().item()
+            score_denominator = torch.tensor(self.score_denominators[i]).sum().item()
+
+            if score_denominator == 0:
+                self.summary[self.metrics_names[i]] = 0.0
+            else:
+                self.summary[self.metrics_names[i]] = round(100. * score_numerator /  score_denominator, 3)
 
         return self.summary
 
