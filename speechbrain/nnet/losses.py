@@ -431,8 +431,8 @@ def classification_binary_recall_pos(
     predictions = torch.argmax(probabilities, dim=-1, keepdim=False)
     targets = targets.long()
 
-    mask_gt1pred1 = (predictions == torch.ones_like(predictions) &
-                     targets == torch.ones_like(targets)).squeeze(1).long()
+    mask_gt1pred1 = torch.logical_and(predictions == torch.ones_like(predictions),
+                                      targets == torch.ones_like(targets)).squeeze(1).long()
     mask_gt1 = (targets == torch.ones_like(targets)).squeeze(1).long()
 
     return mask_gt1pred1, mask_gt1
@@ -450,8 +450,8 @@ def classification_binary_recall_neg(
     predictions = torch.argmax(probabilities, dim=-1, keepdim=False)
     targets = targets.long()
 
-    mask_gt0pred0 = (predictions == torch.zeros_like(predictions) &
-                     targets == torch.zeros_like(targets)).squeeze(1).long()
+    mask_gt0pred0 = torch.logical_and(predictions == torch.zeros_like(predictions),
+                                      targets == torch.zeros_like(targets)).squeeze(1).long()
     mask_gt0 = (targets == torch.zeros_like(targets)).squeeze(1).long()
 
     return mask_gt0pred0, mask_gt0
@@ -469,8 +469,8 @@ def classification_binary_precision_pos(
     predictions = torch.argmax(probabilities, dim=-1, keepdim=False)
     targets = targets.long()
 
-    mask_gt1pred1 = (predictions == torch.ones_like(predictions) &
-                     targets == torch.ones_like(targets)).squeeze(1).long()
+    mask_gt1pred1 = torch.logical_and(predictions == torch.ones_like(predictions),
+                                      targets == torch.ones_like(targets)).squeeze(1).long()
     mask_pred1 = (predictions == torch.ones_like(predictions)).squeeze(1).long()
 
     return mask_gt1pred1, mask_pred1
@@ -488,8 +488,8 @@ def classification_binary_precision_neg(
     predictions = torch.argmax(probabilities, dim=-1, keepdim=False)
     targets = targets.long()
 
-    mask_gt0pred0 = (predictions == torch.zeros_like(predictions) &
-                     targets == torch.zeros_like(targets)).squeeze(1).long()
+    mask_gt0pred0 = torch.logical_and(predictions == torch.zeros_like(predictions),
+                                      targets == torch.zeros_like(targets)).squeeze(1).long()
     mask_pred0 = (predictions == torch.zeros_like(predictions)).squeeze(1).long()
 
     return mask_gt0pred0, mask_pred0
