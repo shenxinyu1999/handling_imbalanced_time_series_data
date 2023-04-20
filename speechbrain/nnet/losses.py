@@ -494,6 +494,18 @@ def classification_binary_precision_neg(
 
     return mask_gt0pred0, mask_pred0
 
+def classification_roc_ruc(
+    probabilities, targets, length=None, allowed_len_diff=3, reduction=None
+):
+
+    if len(probabilities.shape) == 3 and len(targets.shape) == 2:
+        probabilities, targets = truncate(
+            probabilities, targets, allowed_len_diff
+        )
+    probabilities = torch.nn.functional.softmax(probabilities.squeeze(1), dim=-1)
+    targets = targets.squeeze(1)
+
+    return probabilities[:,1], targets
 
 def nll_loss(
     log_probabilities,
