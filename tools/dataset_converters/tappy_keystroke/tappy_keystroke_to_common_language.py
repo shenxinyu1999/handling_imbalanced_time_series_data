@@ -20,6 +20,7 @@ import re
 from tqdm import tqdm
 import pandas as pd
 import numpy as np
+import termplotlib as tpl
 
 CLASSES = {
     "identity": {"class_info": [dict(id=0, name='Negative'),
@@ -49,6 +50,11 @@ def parse_args():
         default=None,
         type=str,
         help='path of test users file path.')
+    parser.add_argument(
+        '--split_max_time_interval',
+        default=None,
+        type=float,
+        help='split data by maximum time interval')
     parser.add_argument(
         '--min_lines_in_data',
         default=100,
@@ -131,6 +137,9 @@ def main():
     # split user to train or test
     user_train_test_state_dict = {}
 
+    # statistic collect timeinterval
+    timeintervals_list = []
+
     # go through all data folder
     data_names = sorted(os.listdir(in_data_folder))
     for data_name in tqdm(data_names):
@@ -200,13 +209,53 @@ def main():
                 else:
                     raise ValueError(f"user_name={user_name} cannot be found in train_users_list or test_users_list.")
 
-            # set dst data path
-            dst_data_path = osp.join(out_folder, CLASSES['identity']['class_info'][label]['name'], train_test_state,
-                                     user_name + "_" + str(src_data_subdf.iat[1,1]) + ".txt")
-            os.makedirs(osp.dirname(dst_data_path), exist_ok=True)
+            # split base on timeinterval
+            if args.split_max_time_interval is not None:
 
-            # save sub dataframe into file
-            src_data_subdf.to_csv(dst_data_path, sep='\t', header=False, index=False)
+                timestamps = np.array(pd.to_timedelta(src_data_subdf['Timestamp']).dt.total_seconds())
+                timediff = timestamps[1:] - timestamps[:-1]
+                mask_timediff = timediff > args.split_max_time_interval
+                cum_mask_timediff = np.cumsum(mask_timediff)
+
+                # here cum_mask's length is smaller than df by 1, so we pad 0 at the beginning
+                cum_mask_timediff = np.pad(cum_mask_timediff, (1,0), 'constant', constant_values=(0,0))
+
+                # iterate over time intervals
+                for time_interval_idx in np.unique(cum_mask_timediff).tolist():
+                    mask_time_interval = cum_mask_timediff == time_interval_idx
+                    src_data_subsubdf = src_data_subdf[mask_time_interval]
+
+                    # filter number of lines
+                    if src_data_subsubdf.shape[0] < args.min_lines_in_data:
+                        continue
+
+                    # set dst data path
+                    dst_data_path = osp.join(out_folder, CLASSES['identity']['class_info'][label]['name'], train_test_state,
+                                             user_name + "_" + str(src_data_subdf.iat[1,1]) + "_" + str(time_interval_idx) + ".txt")
+                    os.makedirs(osp.dirname(dst_data_path), exist_ok=True)
+
+                    # save sub dataframe into file
+                    src_data_subsubdf.to_csv(dst_data_path, sep='\t', header=False, index=False)
+
+                    # statistic time interval
+                    sub_timestamps = np.array(pd.to_timedelta(src_data_subsubdf['Timestamp']).dt.total_seconds())
+                    sub_timediff = sub_timestamps[1:] - sub_timestamps[:-1]
+                    timeintervals_list.append(sub_timediff)
+
+            # split base on date
+            else:
+                # set dst data path
+                dst_data_path = osp.join(out_folder, CLASSES['identity']['class_info'][label]['name'], train_test_state,
+                                         user_name + "_" + str(src_data_subdf.iat[1,1]) + ".txt")
+                os.makedirs(osp.dirname(dst_data_path), exist_ok=True)
+
+                # save sub dataframe into file
+                src_data_subdf.to_csv(dst_data_path, sep='\t', header=False, index=False)
+
+                # statistic time interval
+                timestamps = np.array(pd.to_timedelta(src_data_subdf['Timestamp']).dt.total_seconds())
+                timediff = timestamps[1:] - timestamps[:-1]
+                timeintervals_list.append(timediff)
 
     # statistic
     print("# original data: ", len(data_names),
@@ -227,6 +276,13 @@ def main():
               "\n# test user: ", len(test_users_list),
               "\n# filtered total user: ", len(train_users_list)+len(test_users_list))
 
+    # statistic timeinterval
+    print("timeintervals:")
+    timeintervals_list = np.concatenate(timeintervals_list, axis=0)
+    fig = tpl.figure()
+    counts, bin_edges = np.histogram(timeintervals_list, bins='sqrt')
+    fig.hist(counts, bin_edges, orientation="horizontal", force_ascii=False)
+    fig.show()
 
 if __name__ == '__main__':
     main()

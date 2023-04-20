@@ -49,3 +49,35 @@ PYTHONPATH="$(dirname -- $0)/..":$PYTHONPATH \
     --test_users_path /home1/zjin8285/03_gits/handling_imbalanced_time_series_data/data/test_users.csv \
     --min_lines_in_data 50
 
+# split train-test by file
+dst_data_dir="/home1/zjin8285/00_Data/tappy_keystroke/processed/v3_splitbyfile_minlines50_maxtimeinterval10"
+PYTHONPATH="$(dirname -- $0)/..":$PYTHONPATH \
+    python tools/dataset_converters/tappy_keystroke/tappy_keystroke_to_common_language.py \
+    -i ${src_data_dir} \
+    -o ${dst_data_dir} \
+    --train_users_path /home1/zjin8285/03_gits/handling_imbalanced_time_series_data/data/train_users.csv \
+    --test_users_path /home1/zjin8285/03_gits/handling_imbalanced_time_series_data/data/test_users.csv \
+    --split_max_time_interval 10 \
+    --min_lines_in_data 50
+
+# split train-test by file
+dst_data_dir="/home1/zjin8285/00_Data/tappy_keystroke/processed/v4_splitbyfile_minlines50_maxtimeinterval60"
+PYTHONPATH="$(dirname -- $0)/..":$PYTHONPATH \
+    python tools/dataset_converters/tappy_keystroke/tappy_keystroke_to_common_language.py \
+    -i ${src_data_dir} \
+    -o ${dst_data_dir} \
+    --train_users_path /home1/zjin8285/03_gits/handling_imbalanced_time_series_data/data/train_users.csv \
+    --test_users_path /home1/zjin8285/03_gits/handling_imbalanced_time_series_data/data/test_users.csv \
+    --split_max_time_interval 60 \
+    --min_lines_in_data 50
+
+# split train-test by file
+dst_data_dir="/home1/zjin8285/00_Data/tappy_keystroke/processed/v5_splitbyfile_minlines50_maxtimeinterval300"
+PYTHONPATH="$(dirname -- $0)/..":$PYTHONPATH \
+    python tools/dataset_converters/tappy_keystroke/tappy_keystroke_to_common_language.py \
+    -i ${src_data_dir} \
+    -o ${dst_data_dir} \
+    --train_users_path /home1/zjin8285/03_gits/handling_imbalanced_time_series_data/data/train_users.csv \
+    --test_users_path /home1/zjin8285/03_gits/handling_imbalanced_time_series_data/data/test_users.csv \
+    --split_max_time_interval 300 \
+    --min_lines_in_data 50
