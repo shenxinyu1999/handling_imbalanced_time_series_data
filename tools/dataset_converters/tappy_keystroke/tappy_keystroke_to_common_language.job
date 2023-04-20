@@ -26,14 +26,58 @@ conda activate env_speechbrain_py3.7.6_torch1.9.0_cuda11.1_cudnn8.0.5_0
 # set dir
 code_dir="/home1/zjin8285/03_gits/handling_imbalanced_time_series_data"
 src_data_dir="/home1/zjin8285/00_Data/tappy_keystroke/raw"
-dst_data_dir="/home1/zjin8285/00_Data/tappy_keystroke/processed"
 
 # execute
 cd ${code_dir}
+
+# split train-test by code
+dst_data_dir="/home1/zjin8285/00_Data/tappy_keystroke/processed/v1_splitbycode_train0.8test0.2_minlines50"
 PYTHONPATH="$(dirname -- $0)/..":$PYTHONPATH \
     python tools/dataset_converters/tappy_keystroke/tappy_keystroke_to_common_language.py \
     -i ${src_data_dir} \
     -o ${dst_data_dir} \
-    --train_test_split_ratio 0.75 \
+    --train_test_split_ratio 0.8 \
     --min_lines_in_data 50
 
+# split train-test by file
+dst_data_dir="/home1/zjin8285/00_Data/tappy_keystroke/processed/v2_splitbyfile_minlines50"
+PYTHONPATH="$(dirname -- $0)/..":$PYTHONPATH \
+    python tools/dataset_converters/tappy_keystroke/tappy_keystroke_to_common_language.py \
+    -i ${src_data_dir} \
+    -o ${dst_data_dir} \
+    --train_users_path /home1/zjin8285/03_gits/handling_imbalanced_time_series_data/data/train_users.csv \
+    --test_users_path /home1/zjin8285/03_gits/handling_imbalanced_time_series_data/data/test_users.csv \
+    --min_lines_in_data 50
+
+# split train-test by file
+dst_data_dir="/home1/zjin8285/00_Data/tappy_keystroke/processed/v3_splitbyfile_minlines50_maxtimeinterval10"
+PYTHONPATH="$(dirname -- $0)/..":$PYTHONPATH \
+    python tools/dataset_converters/tappy_keystroke/tappy_keystroke_to_common_language.py \
+    -i ${src_data_dir} \
+    -o ${dst_data_dir} \
+    --train_users_path /home1/zjin8285/03_gits/handling_imbalanced_time_series_data/data/train_users.csv \
+    --test_users_path /home1/zjin8285/03_gits/handling_imbalanced_time_series_data/data/test_users.csv \
+    --split_max_time_interval 10 \
+    --min_lines_in_data 50
+
+# split train-test by file
+dst_data_dir="/home1/zjin8285/00_Data/tappy_keystroke/processed/v4_splitbyfile_minlines50_maxtimeinterval60"
+PYTHONPATH="$(dirname -- $0)/..":$PYTHONPATH \
+    python tools/dataset_converters/tappy_keystroke/tappy_keystroke_to_common_language.py \
+    -i ${src_data_dir} \
+    -o ${dst_data_dir} \
+    --train_users_path /home1/zjin8285/03_gits/handling_imbalanced_time_series_data/data/train_users.csv \
+    --test_users_path /home1/zjin8285/03_gits/handling_imbalanced_time_series_data/data/test_users.csv \
+    --split_max_time_interval 60 \
+    --min_lines_in_data 50
+
+# split train-test by file
+dst_data_dir="/home1/zjin8285/00_Data/tappy_keystroke/processed/v5_splitbyfile_minlines50_maxtimeinterval300"
+PYTHONPATH="$(dirname -- $0)/..":$PYTHONPATH \
+    python tools/dataset_converters/tappy_keystroke/tappy_keystroke_to_common_language.py \
+    -i ${src_data_dir} \
+    -o ${dst_data_dir} \
+    --train_users_path /home1/zjin8285/03_gits/handling_imbalanced_time_series_data/data/train_users.csv \
+    --test_users_path /home1/zjin8285/03_gits/handling_imbalanced_time_series_data/data/test_users.csv \
+    --split_max_time_interval 300 \
+    --min_lines_in_data 50
