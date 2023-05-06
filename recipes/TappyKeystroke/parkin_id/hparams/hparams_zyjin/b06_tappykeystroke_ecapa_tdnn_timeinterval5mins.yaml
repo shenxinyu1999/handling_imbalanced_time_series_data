@@ -14,9 +14,9 @@ __set_seed: !apply:torch.manual_seed [!ref <seed>]
 # Set up folders for reading from and writing to
 # Dataset will be downloaded to the `data_folder`
 # data_folder: !PLACEHOLDER # e.g. /localscratch/common_voice_kpd/
-data_folder: /home1/zjin8285/00_Data/tappy_keystroke/processed/ 
+data_folder: /home1/zjin8285/00_Data/tappy_keystroke/processed/v5_splitbyfile_minlines50_maxtimeinterval300/ 
 # output_folder: !ref results/ECAPA-TDNN/<seed>
-output_folder: /home1/zjin8285/01_Exps/03_B03_tappykeystroke_ecapa_tdnn_reduce_model 
+output_folder: /home1/zjin8285/01_Exps/06_B06_tappykeystroke_ecapa_tdnn_timeinterval5mins
 save_folder: !ref <output_folder>/save
 # rir_folder: !ref <data_folder>
 train_log: !ref <output_folder>/train_log.txt
@@ -39,22 +39,24 @@ error_stats: !name:speechbrain.utils.metric_stats.MultiMetricStats
         - !name:speechbrain.nnet.losses.classification_binary_recall_neg
         - !name:speechbrain.nnet.losses.classification_binary_precision_pos
         - !name:speechbrain.nnet.losses.classification_binary_precision_neg
+        - !name:speechbrain.nnet.losses.classification_roc_ruc
     metrics_names:
         - acc
         - recall_pos
         - recall_neg
         - precision_pos
         - precision_neg
+        - roc_auc
 
 # Feature parameters btw: 40 - 80
 n_mels: 80
 
 # Training Parameters
 sample_rate: 1000
-number_of_epochs: 30
-batch_size: 8
+number_of_epochs: 60
+batch_size: 32
 n_languages: 2
-emb_dim: 192 # dimensionality of the embeddings
+emb_dim: 32 # dimensionality of the embeddings
 
 # Dataloaders
 train_dataloader_options:
@@ -80,9 +82,12 @@ test_dataloader_options:
 
 # Adds speech change + time and frequency dropouts (time-domain implementation)
 # A small speed change help to improve the performance of speaker-id as well.
-# augmentation: !new:speechbrain.lobes.augment.TimeDomainSpecAugment
-#     sample_rate: !ref <sample_rate>
-#     speeds: [95, 100, 105]
+augmentation: !new:speechbrain.lobes.augment.TimeDomainSpecAugment
+    sample_rate: !ref <sample_rate>
+    speeds: [95, 100, 105]
+    perturb_prob: 1.0
+    drop_freq_prob: 0.0
+    drop_chunk_prob: 0.0
 
 # Feature extraction
 compute_features: !new:speechbrain.lobes.features.Fbank
@@ -102,10 +107,12 @@ mean_var_norm_input: !new:speechbrain.processing.features.InputNormalization
 embedding_model: !new:speechbrain.lobes.models.ECAPA_TDNN.ECAPA_TDNN
     input_size: !ref <n_mels>
     activation: !name:torch.nn.ReLU
-    channels: [512, 512, 512]
+    channels: [256, 256, 256]
     kernel_sizes: [5, 3, 1]
     dilations: [1, 2, 1]
-    attention_channels: 128
+    attention_channels: 32
+    se_channels: 32
+    groups: [1, 1, 1]
     lin_neurons: !ref <emb_dim>
     res2net_scale: 1
     dropout_rate: 0.5
@@ -126,7 +133,7 @@ epoch_counter: !new:speechbrain.utils.epoch_loop.EpochCounter
 modules:
     compute_features: !ref <compute_features>
     # env_corrupt: !ref <env_corrupt>
-    # augmentation: !ref <augmentation>
+    augmentation: !ref <augmentation>
     embedding_model: !ref <embedding_model>
     mean_var_norm_input: !ref <mean_var_norm_input>
     classifier: !ref <classifier>
@@ -138,8 +145,8 @@ compute_cost: !new:speechbrain.nnet.losses.SigmoidFocalLossWrapper
     reduction: sum
 
 # Learning rates
-lr: 0.0001
-lr_final: 0.00001
+lr: 0.0005
+lr_final: 0.000001
 
 # This optimizer will be constructed by the Brain class after all parameters
 # are moved to the correct device. Then it will be added to the checkpointer.

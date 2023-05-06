@@ -10,6 +10,7 @@ Authors:
 
 import torch
 from joblib import Parallel, delayed
+from sklearn import metrics
 from speechbrain.utils.data_utils import undo_padding
 from speechbrain.utils.edit_distance import wer_summary, wer_details_for_batch
 from speechbrain.dataio.dataio import (
@@ -175,11 +176,11 @@ class MultiMetricStats(MetricStats):
 
     def clear(self):
         """Creates empty container for storage, removing existing stats."""
-        self.score_numerators = []
-        self.score_denominators = []
+        self.score_out_first = []
+        self.score_out_second = []
         for _ in range(len(self.metrics)):
-            self.score_numerators.append([])
-            self.score_denominators.append([])
+            self.score_out_first.append([])
+            self.score_out_second.append([])
         self.ids = []
         self.summary = {}
 
@@ -200,11 +201,11 @@ class MultiMetricStats(MetricStats):
             for i in range(len(self.metrics)):
                 rtn = self.metrics[i](*args, **kwargs)
                 if isinstance(rtn, tuple):
-                    self.score_numerators[i].extend(rtn[0].detach())
-                    self.score_denominators[i].extend(rtn[1].detach())
+                    self.score_out_first[i].extend(rtn[0].detach())
+                    self.score_out_second[i].extend(rtn[1].detach())
                 else:
-                    self.score_numerators[i].extend(rtn.detach())
-                    self.score_denominators[i].extend(torch.ones_like(rtn.detach()))
+                    self.score_out_first[i].extend(rtn.detach())
+                    self.score_out_second[i].extend(torch.ones_like(rtn.detach()))
 
         else:
             raise NotImplementedError
@@ -212,8 +213,22 @@ class MultiMetricStats(MetricStats):
     def summarize(self, field=None):
 
         for i in range(len(self.metrics)):
-            self.summary[self.metrics_names[i]] = 100. * torch.tensor(self.score_numerators[i]).sum() / \
-                                                  torch.tensor(self.score_denominators[i]).sum()
+
+            if self.metrics_names[i] == "roc_auc":
+                scores = torch.tensor(self.score_out_first[i]).numpy()
+                labels = torch.tensor(self.score_out_second[i]).numpy()
+                fpr, tpr, thresholds = metrics.roc_curve(labels, scores)
+                roc_auc = metrics.auc(fpr, tpr)
+                self.summary["roc_auc"] = round(100. * roc_auc, 3)
+
+            else:
+                score_numerator = torch.tensor(self.score_out_first[i]).sum().item()
+                score_denominator = torch.tensor(self.score_out_second[i]).sum().item()
+
+                if score_denominator == 0:
+                    self.summary[self.metrics_names[i]] = 0.0
+                else:
+                    self.summary[self.metrics_names[i]] = round(100. * score_numerator /  score_denominator, 3)
 
         return self.summary
 
