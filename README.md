@@ -1,4 +1,4 @@
-#handling_imbalanced_time_series_data
+# handling_imbalanced_time_series_data
 
 This project explores the way to handle imbalanced time series clinical data.
 
